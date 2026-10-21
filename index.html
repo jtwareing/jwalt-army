@@ -461,14 +461,25 @@ function verdictFor(pct){
 // Reaction photo by result, bad (1) to good (4): [file, caption, crop focus]
 const REACTIONS={1:["img/result-1.png","JWalt is disappointed","50% 18%"],2:["img/result-2.png","Jonathan expects more","58% 25%"],3:["img/result-3.png","JWalt applauds your effort","56% 25%"],4:["img/result-4.png","Incredible. Us right now","42% 30%"]};
 const tierFor=pct=>pct>=.9?4:pct>=.65?3:pct>=.35?2:1;
+/* Sharing: the phone's share sheet where there is one, otherwise copy to the clipboard */
+const SITE="https://jtwareing.github.io/jwalt-army/";
+const ticks=a=>a.map(x=>x?"✅":"❌").join("");
+function shareText(text,btn){
+  const done=msg=>{const o=btn.textContent;btn.textContent=msg;setTimeout(()=>btn.textContent=o,1800)};
+  const fallback=()=>{const ta=document.createElement("textarea");ta.value=text;ta.setAttribute("readonly","");ta.style.cssText="position:fixed;top:0;left:0;opacity:0";document.body.appendChild(ta);ta.select();
+    let ok=false;try{ok=document.execCommand("copy")}catch(e){}ta.remove();done(ok?"Copied":"Copy failed")};
+  const copy=()=>navigator.clipboard?navigator.clipboard.writeText(text).then(()=>done("Copied"),fallback):fallback();
+  if(navigator.share&&matchMedia("(pointer:coarse)").matches){navigator.share({text}).catch(e=>{if(e&&e.name!=="AbortError")copy()})}else copy();
+}
 function resultBox(o){
   const [src,cap,pos]=REACTIONS[o.tier||1];
   return `<div class="result" role="status"><figure class="react"><img src="${src}" alt="Jonathan Walters: ${esc(cap)}" style="object-position:${pos}"><figcaption>${esc(cap)}</figcaption></figure>
   <div><div class="lbl">${esc(o.lbl||"Full time")}</div><div class="score">${esc(o.score)}</div><div class="verdict">${o.verdict}</div>
   ${o.pts?`<span class="pts">${esc(o.pts)}</span>`:""}${o.extra||""}
-  <div class="actions">${o.again?`<button class="btn" data-act="again">${esc(o.again)}</button>`:""}<button class="btn ghost" data-act="career">See Career Mode</button></div></div></div>`;
+  <div class="actions">${o.share?`<button class="btn" data-act="share" data-share="${esc(o.share)}">Share result</button>`:""}${o.again?`<button class="btn${o.share?" ghost":""}" data-act="again">${esc(o.again)}</button>`:""}<button class="btn ghost" data-act="career">See Career Mode</button></div></div></div>`;
 }
 function wireResult(root,again){
+  const sb=root.querySelector('[data-act="share"]');if(sb)sb.addEventListener("click",()=>shareText(sb.dataset.share,sb));
   root.querySelector('[data-act="again"]')?.addEventListener("click",again);
   root.querySelector('[data-act="career"]').addEventListener("click",()=>$("#tab-career").click());
 }
@@ -498,7 +509,9 @@ function startQuiz(q){
   function finish(){if(done)return;done=true;stopTimer();inp.disabled=true;$("#giveup").disabled=true;
     q.answers.forEach((a,i)=>{if(!got.has(i)){const el=$("#s"+i);el.classList.add("missed");el.querySelector(".nm").textContent=a[0]}});
     const prev=store.quiz[q.id]??-1,isBest=got.size>prev;if(isBest){store.quiz[q.id]=got.size;save();renderCards()}
-    $("#res").innerHTML=resultBox({tier:tierFor(got.size/q.answers.length),score:got.size+"/"+q.answers.length,verdict:esc(verdictFor(got.size/q.answers.length)),pts:isBest&&got.size>0?"New best: career points updated":"",again:"Play again"});
+    $("#res").innerHTML=resultBox({share:`⚽ JWalt Army · ${q.title}
+${got.size}/${q.answers.length} named
+${SITE}`,tier:tierFor(got.size/q.answers.length),score:got.size+"/"+q.answers.length,verdict:esc(verdictFor(got.size/q.answers.length)),pts:isBest&&got.size>0?"New best: career points updated":"",again:"Play again"});
     wireResult($("#res"),()=>startQuiz(q));$("#fl").textContent="Red names are the ones you missed.";}
 }
 function startShootout(q){
@@ -520,7 +533,9 @@ function startShootout(q){
     }));
   };
   const end=()=>{const prev=store.quiz[q.id]??-1,isBest=score>prev;if(isBest){store.quiz[q.id]=score;save();renderCards()}
-    $("#play").innerHTML=`<div class="panel"><h2>${esc(q.title)}</h2>${resultBox({tier:tierFor(score/5),score:score+"/5",verdict:esc(score===5?"Five from five. Nerves of steel, unlike Anfield 2013.":score>=3?"Shootout won. Ice cool from twelve yards.":"Shootout lost. Even JWalt insisted he'd keep taking them."),pts:isBest&&score>0?"New best: career points updated":"",again:"Take another five"})}</div>`;
+    $("#play").innerHTML=`<div class="panel"><h2>${esc(q.title)}</h2>${resultBox({share:`⚽ JWalt Army · Spot-Kick Shootout ${score}/5
+${ticks(marks)}
+${SITE}`,tier:tierFor(score/5),score:score+"/5",verdict:esc(score===5?"Five from five. Nerves of steel, unlike Anfield 2013.":score>=3?"Shootout won. Ice cool from twelve yards.":"Shootout lost. Even JWalt insisted he'd keep taking them."),pts:isBest&&score>0?"New best: career points updated":"",again:"Take another five"})}</div>`;
     wireResult($("#play"),()=>startShootout(q));};
   draw();
 }
@@ -552,7 +567,10 @@ function renderWaltle(){
   let foot="";
   if(st.over){const pts=st.won&&!practice?(WALTLE_MAX+1-st.guesses.length)*2:0;
     const g=st.guesses.length;
-    foot=resultBox({tier:!st.won?1:g<=2?4:g<=4?3:2,lbl:st.won?"Got him":"Out of guesses",score:st.won?st.guesses.length+"/"+WALTLE_MAX:"X/"+WALTLE_MAX,
+    const E={g:"🟩",y:"🟨",x:"⬜"};
+    foot=resultBox({share:practice?"":`JWaltle #${gameNo} ${st.won?g:"X"}/${WALTLE_MAX}
+${st.guesses.map(i=>cmpRow(P[i],target).map(c=>E[c[0]]).join("")).join(String.fromCharCode(10))}
+${SITE}`,tier:!st.won?1:g<=2?4:g<=4?3:2,lbl:st.won?"Got him":"Out of guesses",score:st.won?st.guesses.length+"/"+WALTLE_MAX:"X/"+WALTLE_MAX,
       verdict:`It was ${plink(target)}: ${esc(target.p.toLowerCase())}, ${esc(target.nt==="Uncapped"?"uncapped at senior level":target.nt)}, born ${target.b}, ${target.g} Premier League goals. With JWalt at ${esc(target.pc.join(" and "))} from ${seasonStr(target.pf)}.`,
       pts:pts?`+${pts} career points`:practice?"Practice round, no points":"",again:"Practice with a random team-mate",
       extra:practice?"":`<p class="why" style="margin-top:10px">A new mystery team-mate appears tomorrow.</p>`})}
@@ -588,7 +606,9 @@ function renderPath(){
     +(left?`<li class="hide"><span class="yrs">????</span><span class="club">${left} more club${left===1?"":"s"} to come</span></li>`:"");
   let foot="";
   if(st.over){const pts=practice?0:pathPts(st);
-    foot=resultBox({tier:!st.won?1:tierFor(1-(st.r-1)/st.n),lbl:st.won?"Spotted him":"Full time",score:st.won?`${st.r}/${st.n}`:"X",
+    foot=resultBox({share:practice?"":`Journeyman #${gameNo} ${st.won?st.r:"X"}/${st.n}
+${"🟥".repeat(st.won?st.r-1:st.r)}${st.won?"🟩":""}${"⬛".repeat(st.n-st.r)}
+${SITE}`,tier:!st.won?1:tierFor(1-(st.r-1)/st.n),lbl:st.won?"Spotted him":"Full time",score:st.won?`${st.r}/${st.n}`:"X",
       verdict:st.won?`It was ${plink(t)}, named with ${st.r} of ${st.n} clubs showing.`:`It was ${plink(t)}.`,
       pts:pts?`+${pts} career points`:practice?"Practice round, no points":"",again:"Practice with another journey",
       extra:practice?"":`<p class="why" style="margin-top:10px">A new journey appears tomorrow.</p>`})}
@@ -620,7 +640,8 @@ function renderLink(){
   const tried=st.tries.map(i=>{const p=P[i];return linkIdx.has(i)?`<li class="hit">${esc(p.n)} <span>· ${esc(linkIdx.get(i))}</span></li>`:`<li>${esc(p.n)} <span>· no overlap on record</span></li>`}).join("");
   let foot="";
   if(st.over){const pts=st.won&&!practice?Math.max(1,5-st.wides):0;
-    foot=resultBox({tier:!st.won?1:st.wides===0?4:st.wides<=2?3:2,lbl:st.won?"Linked up":"Full time",score:st.won?"+"+Math.max(1,5-st.wides):"0",
+    foot=resultBox({share:practice?"":`The Missing Link #${gameNo}: ${st.won?"linked up":"no link"}${st.wides?`, ${st.wides} miss${st.wides===1?"":"es"}`:""}${st.wides||st.won?"\n"+"❌".repeat(st.wides)+(st.won?"🔗":""):""}
+${SITE}`,tier:!st.won?1:st.wides===0?4:st.wides<=2?3:2,lbl:st.won?"Linked up":"Full time",score:st.won?"+"+Math.max(1,5-st.wides):"0",
       verdict:st.won?`${esc(P[hit].n)} and ${esc(m.n)} were at ${esc(linkIdx.get(hit).replace(/ \d{4}.*$/,""))} together.`:`No link this time. Here are all ${m.l.length} JWalt team-mates who were on ${esc(m.n)}'s books.`,
       pts:pts?`+${pts} career points`:practice?"Practice round, no points":"",again:"Practice with another player",
       extra:`<ol class="linklist">${m.l.map(([i,v])=>`<li class="${st.tries.includes(i)?"hit":""}">${plink(P[i])} <span>· ${esc(v)}</span></li>`).join("")}</ol>`})}
@@ -657,7 +678,9 @@ function renderHilo(){
   const pips=`<div class="pens">${set.map((_,i)=>`<span class="pen ${st.answers[i]===true?"y":st.answers[i]===false?"n":""}"></span>`).join("")}</div>`;
   if(n>=set.length){
     if(!practice&&(dayRec().hilo||0)!==score){dayRec().hilo=score;save()}
-    $("#hilo-game").innerHTML=`<div class="panel">${pips}${resultBox({tier:tierFor(score/10),score:score+"/10",
+    $("#hilo-game").innerHTML=`<div class="panel">${pips}${resultBox({share:practice?"":`More or Fewer #${gameNo} ${score}/10
+${ticks(st.answers)}
+${SITE}`,tier:tierFor(score/10),score:score+"/10",
       verdict:esc(score===10?"Ten from ten. You know that dressing room better than Pulis.":score>=7?"Strong shift. You know your Premier League scorers.":score>=4?"A mid-table finish. Some of them surprised you.":"Relegation form. Back to the Championship for some research."),
       pts:practice?"Practice round, no points":`+${score} career points`,again:"Practice with ten more",
       extra:`<ol class="linklist">${set.map((p,i)=>`<li class="${st.answers[i]?"hit":""}">${plink(p)} <span>· ${p.g} ${p.g>JW_PL?"more":"fewer"}</span></li>`).join("")}</ol>`})}</div>`;
