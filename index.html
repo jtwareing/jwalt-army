@@ -473,8 +473,8 @@ const REACTIONS={1:["img/result-1.png","JWalt is disappointed","50% 18%"],2:["im
 const tierFor=pct=>pct>=.9?4:pct>=.65?3:pct>=.35?2:1;
 /* Sharing: the phone's share sheet where there is one, otherwise copy to the clipboard */
 const SITE="https://jwaltfanarmy.co.uk/";
-/* Daily play counts go to the Cloudflare Worker in stats-worker/; blank until it is set up */
-const STATS_URL="";
+/* Daily play counts go to the Cloudflare Worker in stats-worker/ */
+const STATS_URL="https://jwalt-stats.jtwareing.workers.dev";
 function trackPlay(game,event){
   if(!STATS_URL||location.hostname!=="jwaltfanarmy.co.uk")return;
   const u=`${STATS_URL}/hit?g=${encodeURIComponent(game)}&e=${encodeURIComponent(event)}&d=${today}`;
