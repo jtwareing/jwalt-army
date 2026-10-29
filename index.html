@@ -468,7 +468,7 @@ function verdictFor(pct){
 const REACTIONS={1:["img/result-1.png","JWalt is disappointed","50% 18%"],2:["img/result-2.png","Jonathan expects more","58% 25%"],3:["img/result-3.png","JWalt applauds your effort","56% 25%"],4:["img/result-4.png","Incredible. Us right now","42% 30%"]};
 const tierFor=pct=>pct>=.9?4:pct>=.65?3:pct>=.35?2:1;
 /* Sharing: the phone's share sheet where there is one, otherwise copy to the clipboard */
-const SITE="https://jtwareing.github.io/jwalt-army/";
+const SITE="https://jwaltfanarmy.co.uk/";
 const ticks=a=>a.map(x=>x?"✅":"❌").join("");
 function shareText(text,btn){
   const done=msg=>{const o=btn.textContent;btn.textContent=msg;setTimeout(()=>btn.textContent=o,1800)};
