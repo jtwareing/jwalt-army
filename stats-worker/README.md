@@ -1,6 +1,14 @@
 # JWalt Army play counter
 
-Counts JWaltle plays per day: how many people started (made a first guess), won, and lost or gave up. Each browser counts once per day, and practice rounds are not counted. Nothing personal is stored, only the three daily totals.
+Counts plays per day for every game:
+
+- **JWaltle, Journeyman and The Missing Link:** started, won, lost or gave up.
+- **More or Fewer:** started, finished, and total correct answers (so the stats page can show the average score).
+- **Team Sheet quizzes:** how many times each quiz was finished, replays included.
+
+The daily games count once per browser per day, and practice rounds are not counted. Nothing personal is stored, only daily totals.
+
+**Updating the code:** after a change to `worker.js`, open the Worker in Cloudflare → Edit code, replace everything with the new file, and Deploy. The database and binding stay as they are.
 
 It runs on Cloudflare's free tier: one Worker and one D1 database.
 

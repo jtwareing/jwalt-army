@@ -475,9 +475,9 @@ const tierFor=pct=>pct>=.9?4:pct>=.65?3:pct>=.35?2:1;
 const SITE="https://jwaltfanarmy.co.uk/";
 /* Daily play counts go to the Cloudflare Worker in stats-worker/ */
 const STATS_URL="https://jwalt-stats.jtwareing.workers.dev";
-function trackPlay(game,event){
+function trackPlay(game,event,v){
   if(!STATS_URL||location.hostname!=="jwaltfanarmy.co.uk")return;
-  const u=`${STATS_URL}/hit?g=${encodeURIComponent(game)}&e=${encodeURIComponent(event)}&d=${today}`;
+  const u=`${STATS_URL}/hit?g=${encodeURIComponent(game)}&e=${encodeURIComponent(event)}&d=${today}`+(v!=null?`&v=${v}`:"");
   try{if(!(navigator.sendBeacon&&navigator.sendBeacon(u)))fetch(u,{method:"POST",keepalive:true,mode:"no-cors"}).catch(()=>{})}catch(e){}
 }
 const ticks=a=>a.map(x=>x?"✅":"❌").join("");
@@ -525,6 +525,7 @@ function startQuiz(q){
   $("#giveup").addEventListener("click",finish);
   function finish(){if(done)return;done=true;stopTimer();inp.disabled=true;$("#giveup").disabled=true;
     q.answers.forEach((a,i)=>{if(!got.has(i)){const el=$("#s"+i);el.classList.add("missed");el.querySelector(".nm").textContent=a[0]}});
+    trackPlay("teamsheet",q.id);
     const prev=store.quiz[q.id]??-1,isBest=got.size>prev;if(isBest){store.quiz[q.id]=got.size;save();renderCards()}
     $("#res").innerHTML=resultBox({share:`⚽ JWalt Army · ${q.title}
 ${got.size}/${q.answers.length} named
@@ -549,7 +550,7 @@ function startShootout(q){
       $("#next").addEventListener("click",()=>{n++;n<5?draw():end()});$("#next").focus();
     }));
   };
-  const end=()=>{const prev=store.quiz[q.id]??-1,isBest=score>prev;if(isBest){store.quiz[q.id]=score;save();renderCards()}
+  const end=()=>{trackPlay("teamsheet","shootout");const prev=store.quiz[q.id]??-1,isBest=score>prev;if(isBest){store.quiz[q.id]=score;save();renderCards()}
     $("#play").innerHTML=`<div class="panel"><h2>${esc(q.title)}</h2>${resultBox({share:`⚽ JWalt Army · Spot-Kick Shootout ${score}/5
 ${ticks(marks)}
 ${SITE}`,tier:tierFor(score/5),score:score+"/5",verdict:esc(score===5?"Five from five. Nerves of steel, unlike Anfield 2013.":score>=3?"Shootout won. Ice cool from twelve yards.":"Shootout lost. Even JWalt insisted he'd keep taking them."),pts:isBest&&score>0?"New best: career points updated":"",again:"Take another five"})}</div>`;
@@ -640,7 +641,7 @@ ${SITE}`,tier:!st.won?1:tierFor(1-(st.r-1)/st.n),lbl:st.won?"Spotted him":"Full 
     ${st.g.length?`<p class="missed">Not ${st.g.map(i=>esc(P[i].n)).join(", not ")}.</p>`:""}
     ${foot}</div>`;
   if(st.over){wireResult($("#path-game"),()=>{let n;do{n=J_POOL[Math.floor(Math.random()*J_POOL.length)]}while(n===t);pathPractice={target:n,r:1,n:n.cp.length,g:[],won:false,over:false};renderPath()});if(!practice)renderCareer();return}
-  const commit=()=>{if(!practice)save();renderPath();const i=$("#pg");if(i)i.focus()};
+  const commit=()=>{if(!practice){if(!st.sentStart){st.sentStart=1;trackPlay("journeyman","start")}if(st.over&&!st.sentEnd){st.sentEnd=1;trackPlay("journeyman",st.won?"win":"loss")}save()}renderPath();const i=$("#pg");if(i)i.focus()};
   picker($("#pg"),J_LIST,p=>{if(p===t){st.won=true;st.over=true}else{st.g.push(p.i);if(st.r<st.n)st.r++;else st.over=true}commit()},p=>st.g.includes(p.i));
   $("#pnext")?.addEventListener("click",()=>{st.r++;commit()});
   $("#pgive").addEventListener("click",()=>{st.over=true;commit()});
@@ -672,9 +673,10 @@ ${SITE}`,tier:!st.won?1:st.wides===0?4:st.wides<=2?3:2,lbl:st.won?"Linked up":"F
     ${!st.over&&tried?`<ol class="linklist">${tried}</ol>`:""}
     ${foot}</div>`;
   if(st.over){wireResult($("#link-game"),()=>{let n;do{n=M[Math.floor(Math.random()*M.length)]}while(n===m);linkPractice={m:n,tries:[],wides:0,won:false,over:false};renderLink()});return}
-  picker($("#lg"),P,p=>{st.tries.push(p.i);if(linkIdx.has(p.i)){st.won=true;st.over=true}else st.wides++;if(!practice)save();renderLink();
+  const linkReport=()=>{if(!st.sentStart){st.sentStart=1;trackPlay("link","start")}if(st.over&&!st.sentEnd){st.sentEnd=1;trackPlay("link",st.won?"win":"loss")}};
+  picker($("#lg"),P,p=>{st.tries.push(p.i);if(linkIdx.has(p.i)){st.won=true;st.over=true}else st.wides++;if(!practice){linkReport();save()}renderLink();
     if(!st.over){$("#lfl").textContent=`${p.n} wasn't at any of ${m.n}'s clubs at the same time.`;$("#lfl").className="flash no";$("#lg").focus()}},p=>st.tries.includes(p.i));
-  $("#lgive").addEventListener("click",()=>{st.over=true;if(!practice)save();renderLink()});
+  $("#lgive").addEventListener("click",()=>{st.over=true;if(!practice){linkReport();save()}renderLink()});
 }
 
 /* ---------- More or Fewer: ten team-mates v JWalt's Premier League goals ---------- */
@@ -713,7 +715,9 @@ ${SITE}`,tier:tierFor(score/10),score:score+"/10",
    <p class="flash ${st.lastOk==null?"":st.lastOk?"ok":"no"}">${prev?esc(`${st.lastOk?"Correct":"Wrong"}: ${prev.n} scored ${prev.g} Premier League goals in ${prev.a} games.`):""}</p></div>`;
   document.querySelectorAll("[data-g]").forEach(b=>b.addEventListener("click",()=>{
     const ok=b.dataset.g==="hi"?cur.g>JW_PL:cur.g<JW_PL;st.answers.push(ok);st.lastOk=ok;
-    if(!practice){dayRec().hilo=st.answers.filter(Boolean).length;save()}renderHilo()}));
+    if(!practice){const c=st.answers.filter(Boolean).length;if(!st.sentStart){st.sentStart=1;trackPlay("morefewer","start")}
+      if(st.answers.length>=set.length&&!st.sentEnd){st.sentEnd=1;trackPlay("morefewer","finish");trackPlay("morefewer","correct",c)}
+      dayRec().hilo=c;save()}renderHilo()}));
 }
 
 /* ---------- Career Mode ---------- */
