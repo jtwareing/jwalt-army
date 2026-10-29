@@ -473,6 +473,13 @@ const REACTIONS={1:["img/result-1.png","JWalt is disappointed","50% 18%"],2:["im
 const tierFor=pct=>pct>=.9?4:pct>=.65?3:pct>=.35?2:1;
 /* Sharing: the phone's share sheet where there is one, otherwise copy to the clipboard */
 const SITE="https://jwaltfanarmy.co.uk/";
+/* Daily play counts go to the Cloudflare Worker in stats-worker/; blank until it is set up */
+const STATS_URL="";
+function trackPlay(game,event){
+  if(!STATS_URL||location.hostname!=="jwaltfanarmy.co.uk")return;
+  const u=`${STATS_URL}/hit?g=${encodeURIComponent(game)}&e=${encodeURIComponent(event)}&d=${today}`;
+  try{if(!(navigator.sendBeacon&&navigator.sendBeacon(u)))fetch(u,{method:"POST",keepalive:true,mode:"no-cors"}).catch(()=>{})}catch(e){}
+}
 const ticks=a=>a.map(x=>x?"✅":"❌").join("");
 function shareText(text,btn){
   const done=msg=>{const o=btn.textContent;btn.textContent=msg;setTimeout(()=>btn.textContent=o,1800)};
@@ -593,9 +600,11 @@ ${SITE}`,tier:!st.won?1:g<=2?4:g<=4?3:2,lbl:st.won?"Got him":"Out of guesses",sc
     <div class="legend"><span><i style="background:var(--good)"></i>Match</span><span><i style="background:var(--amber)"></i>Close: a shared club, within a season, 2 years of age or 5 goals</span><span><i style="background:#ece6e4"></i>Not close</span></div>
     ${foot}</div>`;
   if(st.over){wireResult($("#waltle-game"),()=>{waltlePractice={target:W_POOL[Math.floor(Math.random()*W_POOL.length)],guesses:[],won:false,over:false};renderWaltle()});return}
-  const pick=p=>{st.guesses.push(p.i);if(p===target){st.won=true;st.over=true}else if(st.guesses.length>=WALTLE_MAX)st.over=true;if(!practice)save();renderWaltle();if(!st.over)$("#wg").focus()};
+  const report=()=>{if(practice)return;if(st.guesses.length&&!st.sentStart){st.sentStart=1;trackPlay("jwaltle","start")}
+    if(st.over&&!st.sentEnd){st.sentEnd=1;trackPlay("jwaltle",st.won?"win":"loss")}};
+  const pick=p=>{st.guesses.push(p.i);if(p===target){st.won=true;st.over=true}else if(st.guesses.length>=WALTLE_MAX)st.over=true;if(!practice){report();save()}renderWaltle();if(!st.over)$("#wg").focus()};
   picker($("#wg"),W_LIST,pick,p=>st.guesses.includes(p.i));
-  $("#wgive")?.addEventListener("click",()=>{st.over=true;save();renderWaltle()});
+  $("#wgive")?.addEventListener("click",()=>{st.over=true;report();save();renderWaltle()});
 }
 
 /* ---------- Journeyman: name the team-mate from his club path ---------- */
