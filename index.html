@@ -402,6 +402,17 @@ function save(){try{localStorage.setItem(KEY,JSON.stringify(store))}catch(e){}}
 const today=(()=>{const d=new Date();return d.getFullYear()+"-"+String(d.getMonth()+1).padStart(2,"0")+"-"+String(d.getDate()).padStart(2,"0")})();
 const dayNo=Math.floor(new Date(today+"T12:00:00").getTime()/864e5);
 const gameNo=dayNo-Math.floor(new Date("2026-10-20T12:00:00").getTime()/864e5)+1;
+/* Daily answers. Up to game #16 each day was an independent random pick, so answers could repeat.
+   From game #17 each game walks through its pool in a fixed shuffled order, so nobody repeats until
+   the whole pool has been used. Answers already used in games #1 to #16 go to the back of the queue. */
+const NO_REPEAT_FROM=17;
+function dailyPick(pool,mul,add){
+  const old=g=>pool[Math.floor(rng((dayNo-gameNo+g)*mul+add)()*pool.length)];
+  if(gameNo<NO_REPEAT_FROM)return old(gameNo);
+  const used=[];for(let g=1;g<NO_REPEAT_FROM;g++){const p=old(g);if(!used.includes(p))used.push(p)}
+  const order=[...shuffle(pool.filter(p=>!used.includes(p)),rng(mul+add)),...used];
+  return order[(gameNo-NO_REPEAT_FROM)%order.length];
+}
 const dayLabel=new Date(today+"T12:00:00").toLocaleDateString("en-GB",{day:"numeric",month:"long",year:"numeric"});
 function dayRec(){return store.daily[today]||(store.daily[today]={})}
 const WALTLE_MAX=8;
@@ -561,7 +572,7 @@ ${SITE}`,tier:tierFor(score/5),score:score+"/5",verdict:esc(score===5?"Five from
 /* ---------- JWaltle: guess the Premier League team-mate ---------- */
 const W_LIST=P.filter(p=>p.pc);
 const W_POOL=W_LIST.filter(p=>p.g!=null&&p.a>=20);
-const dailyWaltle=W_POOL[Math.floor(rng(dayNo*7919+11)()*W_POOL.length)];
+const dailyWaltle=dailyPick(W_POOL,7919,11);
 let waltlePractice=null;
 function cmpRow(g,t){
   const cells=[];
@@ -611,7 +622,7 @@ ${SITE}`,tier:!st.won?1:g<=2?4:g<=4?3:2,lbl:st.won?"Got him":"Out of guesses",sc
 /* ---------- Journeyman: name the team-mate from his club path ---------- */
 const J_LIST=P.filter(p=>p.cp);
 const J_POOL=J_LIST.filter(p=>p.cp.length>=4);
-const dailyPath=J_POOL[Math.floor(rng(dayNo*65537+5)()*J_POOL.length)];
+const dailyPath=dailyPick(J_POOL,65537,5);
 let pathPractice=null;
 const pathPts=st=>st.won?Math.max(1,Math.round(10*(1-(st.r-1)/st.n))):0;
 const yrs=([,s,e])=>e===0?s+"–":s===e?String(s):s+"–"+e;
@@ -649,7 +660,7 @@ ${SITE}`,tier:!st.won?1:tierFor(1-(st.r-1)/st.n),lbl:st.won?"Spotted him":"Full 
 
 /* ---------- The Missing Link ---------- */
 const M=TM.mystery;
-const dailyLink=M[Math.floor(rng(dayNo*104729+3)()*M.length)];
+const dailyLink=dailyPick(M,104729,3);
 let linkPractice=null;
 function renderLink(){
   const practice=!!linkPractice;
