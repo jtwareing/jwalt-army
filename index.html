@@ -518,7 +518,7 @@ function shareText(text,btn){
   if(navigator.share&&matchMedia("(pointer:coarse)").matches){navigator.share({text}).catch(e=>{if(e&&e.name!=="AbortError")copy()})}else copy();
 }
 function resultBox(o){
-  const [src,cap,pos]=REACTIONS[o.tier||1];
+  const [src,cap,pos]=o.img||REACTIONS[o.tier||1];
   return `<div class="result" role="status"><figure class="react"><img src="${src}" alt="Jonathan Walters: ${esc(cap)}" style="object-position:${pos}"><figcaption>${esc(cap)}</figcaption></figure>
   <div><div class="lbl">${esc(o.lbl||"Full time")}</div><div class="score">${esc(o.score)}</div><div class="verdict">${o.verdict}</div>
   ${o.pts?`<span class="pts">${esc(o.pts)}</span>`:""}${o.extra||""}
@@ -686,7 +686,8 @@ const DAY_ORDER=shuffle(DAYS,rng(4242));
 const dailyDay=DAY_ORDER[((dayGameNo-1)%DAY_ORDER.length+DAY_ORDER.length)%DAY_ORDER.length];
 const DAY_MAX=3;
 let dayPractice=null;
-const dayPts=st=>st.won?DAY_MAX+1-st.g.length:0;
+const dayPts=st=>st.won?[5,3,1][st.g.length-1]||0:0;
+const DAY_WIN=["img/day-win.png","Back of the net","50% 30%"],DAY_MISS=["img/day-miss.png","Worry not. JWalt sometimes also fails to make others feel better","58% 30%"];
 const dayKeys=m=>{const full=norm(m.k),parts=full.split(" ");return new Set([full,parts[parts.length-1],full.replace(/ /g,""),...m.al.map(norm)])};
 const dateLong=iso=>new Date(iso+"T12:00:00").toLocaleDateString("en-GB",{weekday:"long",day:"numeric",month:"long",year:"numeric"});
 const ord=n=>n+(n%100>=11&&n%100<=13?"th":({1:"st",2:"nd",3:"rd"}[n%10]||"th"));
@@ -702,18 +703,18 @@ function renderDay(){
   let foot="";
   if(st.over){const pts=practice?0:dayPts(st);
     foot=resultBox({share:practice?"":`🧤 A Day in the Life #${dayGameNo} ${st.won?st.g.length:"X"}/${DAY_MAX}\n${st.g.map((_,i)=>i===st.g.length-1&&st.won?"🟩":"🟥").join("")}\n${SITE}`,
-      tier:!st.won?1:st.g.length===1?4:st.g.length===2?3:2,lbl:st.won?"Got him":"Full time",score:st.won?`${st.g.length}/${DAY_MAX}`:"X",
+      img:st.won?DAY_WIN:DAY_MISS,lbl:st.won?"Got him":"Full time",score:st.won?`${st.g.length}/${DAY_MAX}`:"X",
       verdict:`${st.won?"Correct. ":""}It was <a href="${wurl(m.w)}" target="_blank" rel="noopener">${esc(m.k)}</a> in goal for ${esc(opp)}. <a href="${m.u}" target="_blank" rel="noopener">Match report</a>`,
       pts:pts?`+${pts} career points`:practice?"Practice round, no points":"",again:"Practice with another match",
       extra:practice?"":`<p class="why" style="margin-top:10px">A new match appears tomorrow.</p>`})}
   $("#day-game").innerHTML=`<div class="sec-head"><h2>A Day in the Life${practice?" practice":" #"+dayGameNo}</h2><span class="day">${practice?"Unscored practice round":dayLabel+" · new match at midnight"}</span></div>
-    <p class="note">One of JWalt's Premier League or Ireland goals. Name the goalkeeper he scored past. ${DAY_MAX} guesses, no clues.</p>
+    <p class="note">One of JWalt's Premier League or Ireland goals. Name the goalkeeper he scored past. ${DAY_MAX} guesses, no clues: 5 points first time, 3 on the second guess, 1 on the third.</p>
     <div class="panel"><div class="fixture">
       <div class="when">${esc(dateLong(m.d))} · ${esc(m.c)}</div>
       <div class="teams"><span class="tm">${esc(m.h)}</span><span class="sc">${m.hs}–${m.as}</span><span class="tm away">${esc(m.a)}</span></div>
       <div class="jw">Jon Walters <b>${esc(goalLine)}</b>.</div>
       <div class="q2">Who was in goal for ${esc(opp)}?</div></div>
-    ${st.g.length?`<p class="missed">Not ${st.g.map(esc).join(", not ")}.</p>`:""}
+    ${(st.won?st.g.slice(0,-1):st.g).length?`<p class="missed">Not ${(st.won?st.g.slice(0,-1):st.g).map(esc).join(", not ")}.</p>`:""}
     ${st.over?"":`<div class="entry"><input id="dg" type="text" autocomplete="off" spellcheck="false" placeholder="Name the goalkeeper" aria-label="Name the goalkeeper"><button class="btn red" id="dgo">Guess</button><button class="btn ghost" id="dgive">Show me</button></div>
       <div class="flash" id="dfl">${DAY_MAX-st.g.length} guess${DAY_MAX-st.g.length===1?"":"es"} left. Surnames are fine.</div>`}
     ${foot}</div>`;
