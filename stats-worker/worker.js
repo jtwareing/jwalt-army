@@ -14,6 +14,7 @@ const SITE = "https://jwaltfanarmy.co.uk";
 const GAMES = {
   jwaltle: { title: "JWaltle", events: { start: "Started", win: "Won", loss: "Lost or gave up" } },
   journeyman: { title: "Journeyman", events: { start: "Started", win: "Won", loss: "Lost or gave up" } },
+  dayinlife: { title: "A Day in the Life", events: { start: "Started", win: "Named the keeper", loss: "Missed" } },
   link: { title: "The Missing Link", events: { start: "Started", win: "Linked", loss: "No link" } },
   morefewer: { title: "More or Fewer", events: { start: "Started", finish: "Finished", correct: "Correct answers" } },
   teamsheet: { title: "Team Sheet quizzes finished", events: { clubs: "Every Badge", gaffers: "The Gaffers", wembley: "Wembley 2011", euro12: "Poznań Bound", euro16: "Bordeaux Bound", shootout: "Shootout" } },
@@ -52,7 +53,7 @@ export default {
       if (url.pathname === "/stats.json") return Response.json(rows);
 
       const esc = s => String(s).replace(/[&<>]/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;" })[c]);
-      const extra = { jwaltle: ["Win rate", d => pct(d.win, d.start)], journeyman: ["Win rate", d => pct(d.win, d.start)], link: ["Link rate", d => pct(d.win, d.start)],
+      const extra = { jwaltle: ["Win rate", d => pct(d.win, d.start)], journeyman: ["Win rate", d => pct(d.win, d.start)], dayinlife: ["Hit rate", d => pct(d.win, d.start)], link: ["Link rate", d => pct(d.win, d.start)],
         morefewer: ["Average score", d => (d.finish ? (d.correct / d.finish).toFixed(1) + "/10" : "–")] };
       const pct = (a, b) => (b ? Math.round(((a || 0) / b) * 100) + "%" : "–");
       const tables = Object.entries(GAMES).map(([g, def]) => {

@@ -183,6 +183,17 @@ table{border-collapse:collapse;width:100%;font-variant-numeric:tabular-nums}
 .linklist li span{color:var(--muted);font-size:13.5px}
 .linklist li.hit{color:var(--good);font-weight:600}
 
+/* A Day in the Life */
+.fixture{display:grid;gap:10px;border:2px solid var(--ink);border-radius:4px;padding:16px;background:var(--pale);margin-top:14px}
+.fixture .when{font-family:var(--mono);font-size:13px;letter-spacing:.06em;text-transform:uppercase;color:var(--muted)}
+.fixture .teams{display:grid;grid-template-columns:minmax(0,1fr) auto minmax(0,1fr);gap:12px;align-items:center}
+.fixture .tm{font-family:var(--display);font-weight:900;font-size:clamp(22px,4vw,34px);text-transform:uppercase;line-height:1}
+.fixture .tm.away{text-align:right}
+.fixture .sc{font-family:var(--display);font-weight:900;font-size:clamp(30px,5vw,44px);background:var(--ink);color:var(--amber);padding:2px 14px;border-radius:4px;font-variant-numeric:tabular-nums;white-space:nowrap}
+.fixture .jw{font-size:15px}
+.fixture .jw b{color:var(--red-dk)}
+.fixture .q2{font-family:var(--display);font-weight:800;font-size:24px;text-transform:uppercase;margin:4px 0 0}
+
 /* Journeyman */
 .path{list-style:none;margin:16px 0 0;padding:0;display:grid;gap:6px;counter-reset:stop}
 .path li{display:grid;grid-template-columns:2.2em 7.5em minmax(0,1fr);gap:10px;align-items:baseline;padding:8px 12px;border-radius:4px;background:var(--pale);border-left:6px solid var(--red)}
@@ -249,7 +260,8 @@ footer{margin-block:40px 32px;padding-top:16px;border-top:1px solid var(--line);
   <symbol id="i-updown" viewBox="0 0 24 24"><path d="m7 4-4 4h3v8M17 20l4-4h-3V8"/></symbol>
   <symbol id="i-link" viewBox="0 0 24 24"><path d="M10 14a4 4 0 0 0 5.7 0l3-3a4 4 0 0 0-5.7-5.7l-1 1"/><path d="M14 10a4 4 0 0 0-5.7 0l-3 3a4 4 0 0 0 5.7 5.7l1-1"/></symbol>
   <symbol id="i-path" viewBox="0 0 24 24"><circle cx="5" cy="19" r="2"/><circle cx="19" cy="5" r="2"/><path d="M7 19h7a3 3 0 0 0 0-6h-4a3 3 0 0 1 0-6h7"/></symbol>
-  <symbol id="i-star"viewBox="0 0 24 24"><path d="m12 3 2.7 5.6 6.1.9-4.4 4.3 1 6.1L12 17l-5.4 2.9 1-6.1-4.4-4.3 6.1-.9z"/></symbol>
+  <symbol id="i-glove" viewBox="0 0 24 24"><path d="M7 21v-5l-3-4.5a1.6 1.6 0 0 1 2.6-1.8L8 11V5a1.5 1.5 0 0 1 3 0v5V4a1.5 1.5 0 0 1 3 0v6V5a1.5 1.5 0 0 1 3 0v6-3a1.5 1.5 0 0 1 3 0v7a6 6 0 0 1-3 5.2V21z"/><path d="M7 18h10"/></symbol>
+  <symbol id="i-star" viewBox="0 0 24 24"><path d="m12 3 2.7 5.6 6.1.9-4.4 4.3 1 6.1L12 17l-5.4 2.9 1-6.1-4.4-4.3 6.1-.9z"/></symbol>
 </svg>
 
 <div class="band">
@@ -274,6 +286,7 @@ footer{margin-block:40px 32px;padding-top:16px;border-top:1px solid var(--line);
     <button role="tab" id="tab-sheet" aria-selected="true" data-tab="sheet"><svg class="i"><use href="#i-shirt"/></svg>Team Sheet</button>
     <button role="tab" id="tab-waltle" aria-selected="false" data-tab="waltle"><svg class="i"><use href="#i-grid"/></svg>JWaltle</button>
     <button role="tab" id="tab-path" aria-selected="false" data-tab="path"><svg class="i"><use href="#i-path"/></svg>Journeyman</button>
+    <button role="tab" id="tab-day" aria-selected="false" data-tab="day"><svg class="i"><use href="#i-glove"/></svg>A Day in the Life</button>
     <button role="tab" id="tab-link" aria-selected="false" data-tab="link"><svg class="i"><use href="#i-link"/></svg>The Missing Link</button>
     <button role="tab" id="tab-hilo" aria-selected="false" data-tab="hilo"><svg class="i"><use href="#i-updown"/></svg>More or Fewer</button>
     <button role="tab" id="tab-career" aria-selected="false" data-tab="career"><svg class="i"><use href="#i-star"/></svg>Career Mode</button>
@@ -291,6 +304,10 @@ footer{margin-block:40px 32px;padding-top:16px;border-top:1px solid var(--line);
 
   <section id="path" role="tabpanel" hidden>
     <div id="path-game"></div>
+  </section>
+
+  <section id="day" role="tabpanel" hidden>
+    <div id="day-game"></div>
   </section>
 
   <section id="link" role="tabpanel" hidden>
@@ -422,6 +439,7 @@ function points(){
     if(d.waltle&&d.waltle.won)p+=(WALTLE_MAX+1-d.waltle.guesses.length)*2;
     if(d.link&&d.link.won)p+=Math.max(1,5-d.link.wides);
     if(d.path&&d.path.over)p+=pathPts(d.path);
+    if(d.day&&d.day.over)p+=dayPts(d.day);
     if(d.hilo)p+=d.hilo}
   return p;
 }
@@ -430,7 +448,7 @@ function plays(){return{quiz:QUIZZES.filter(q=>store.quiz[q.id]!=null).length,da
 /* ---------- Helpers ---------- */
 const $=s=>document.querySelector(s);
 const esc=s=>String(s).replace(/[&<>"]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));
-const norm=s=>s.toLowerCase().replace(/ø/g,"o").replace(/ð/g,"d").replace(/ı/g,"i").normalize("NFD").replace(/[̀-ͯ]/g,"").replace(/[^a-z0-9 ]/g,"").replace(/\s+/g," ").trim();
+const norm=s=>s.toLowerCase().replace(/ø/g,"o").replace(/ð/g,"d").replace(/ı/g,"i").replace(/ł/g,"l").normalize("NFD").replace(/[̀-ͯ]/g,"").replace(/[^a-z0-9 ]/g,"").replace(/\s+/g," ").trim();
 function rng(seed){let t=seed>>>0;return()=>{t+=0x6D2B79F5;let r=Math.imul(t^t>>>15,1|t);r^=r+Math.imul(r^r>>>7,61|r);return((r^r>>>14)>>>0)/4294967296}}
 function shuffle(a,r=Math.random){a=a.slice();for(let i=a.length-1;i>0;i--){const j=Math.floor(r()*(i+1));[a[i],a[j]]=[a[j],a[i]]}return a}
 const seasonStr=y=>y+"–"+String(y+1).slice(2);
@@ -658,6 +676,60 @@ ${SITE}`,tier:!st.won?1:tierFor(1-(st.r-1)/st.n),lbl:st.won?"Spotted him":"Full 
   $("#pgive").addEventListener("click",()=>{st.over=true;commit()});
 }
 
+/* ---------- A Day in the Life: name the keeper JWalt scored past ----------
+   Every Premier League and Ireland goal, with the opposition keeper on the pitch, from 11v11 match
+   reports, each keeper checked against his Wikipedia profile. One match a day, in a fixed shuffled
+   order, so no match repeats until all of them have been used. */
+const DAYS=[{"d":"2010-10-02","h":"Stoke City","a":"Blackburn Rovers","hs":1,"as":0,"c":"Premier League","i":false,"g":[[48,0]],"k":"Paul Robinson","w":"Paul Robinson (footballer, born 1979)","al":[],"u":"https://www.11v11.com/matches/stoke-city-v-blackburn-rovers-02-october-2010-290548/"},{"d":"2010-11-20","h":"West Bromwich Albion","a":"Stoke City","hs":0,"as":3,"c":"Premier League","i":false,"g":[[85,1],[90,0]],"k":"Scott Carson","w":"Scott Carson","al":[],"u":"https://www.11v11.com/matches/west-bromwich-albion-v-stoke-city-20-november-2010-292674/"},{"d":"2011-03-19","h":"Stoke City","a":"Newcastle United","hs":4,"as":0,"c":"Premier League","i":false,"g":[[28,0]],"k":"Steve Harper","w":"Steve Harper","al":[],"u":"https://www.11v11.com/matches/stoke-city-v-newcastle-united-19-march-2011-294167/"},{"d":"2011-04-02","h":"Stoke City","a":"Chelsea","hs":1,"as":1,"c":"Premier League","i":false,"g":[[8,0]],"k":"Petr Čech","w":"Petr Čech","al":["cech"],"u":"https://www.11v11.com/matches/stoke-city-v-chelsea-02-april-2011-294262/"},{"d":"2011-05-08","h":"Stoke City","a":"Arsenal","hs":3,"as":1,"c":"Premier League","i":false,"g":[[82,0]],"k":"Wojciech Szczęsny","w":"Wojciech Szczęsny","al":["szczesny"],"u":"https://www.11v11.com/matches/stoke-city-v-arsenal-08-may-2011-294614/"},{"d":"2011-09-10","h":"Stoke City","a":"Liverpool","hs":1,"as":0,"c":"Premier League","i":false,"g":[[21,1]],"k":"Pepe Reina","w":"Pepe Reina","al":["jose reina","reina"],"u":"https://www.11v11.com/matches/stoke-city-v-liverpool-10-september-2011-295333/"},{"d":"2011-10-15","h":"Stoke City","a":"Fulham","hs":2,"as":0,"c":"Premier League","i":false,"g":[[80,0]],"k":"Mark Schwarzer","w":"Mark Schwarzer","al":[],"u":"https://www.11v11.com/matches/stoke-city-v-fulham-15-october-2011-295676/"},{"d":"2011-10-31","h":"Stoke City","a":"Newcastle United","hs":1,"as":3,"c":"Premier League","i":false,"g":[[75,1]],"k":"Tim Krul","w":"Tim Krul","al":[],"u":"https://www.11v11.com/matches/stoke-city-v-newcastle-united-31-october-2011-295856/"},{"d":"2011-11-11","h":"Estonia","a":"Republic of Ireland","hs":0,"as":4,"c":"Euro 2012 play-off","i":true,"g":[[67,0]],"k":"Sergei Pareiko","w":"Sergei Pareiko","al":[],"u":"https://www.11v11.com/matches/estonia-v-republic-of-ireland-11-november-2011-296220/"},{"d":"2011-11-19","h":"Stoke City","a":"Queens Park Rangers","hs":2,"as":3,"c":"Premier League","i":false,"g":[[8,0]],"k":"Paddy Kenny","w":"Paddy Kenny","al":[],"u":"https://www.11v11.com/matches/stoke-city-v-queens-park-rangers-19-november-2011-295980/"},{"d":"2011-12-31","h":"Stoke City","a":"Wigan Athletic","hs":2,"as":2,"c":"Premier League","i":false,"g":[[77,1]],"k":"Ali Al-Habsi","w":"Ali Al-Habsi","al":["al habsi","habsi","alhabsi","Ali Al Habsi"],"u":"https://www.11v11.com/matches/stoke-city-v-wigan-athletic-31-december-2011-296337/"},{"d":"2012-05-13","h":"Stoke City","a":"Bolton Wanderers","hs":2,"as":2,"c":"Premier League","i":false,"g":[[13,0],[77,1]],"k":"Ádám Bogdán","w":"Ádám Bogdán","al":["adam bogdan","bogdan"],"u":"https://www.11v11.com/matches/stoke-city-v-bolton-wanderers-13-may-2012-298136/"},{"d":"2012-09-01","h":"Wigan Athletic","a":"Stoke City","hs":2,"as":2,"c":"Premier League","i":false,"g":[[40,1]],"k":"Ali Al-Habsi","w":"Ali Al-Habsi","al":["al habsi","habsi","alhabsi","Ali Al Habsi"],"u":"https://www.11v11.com/matches/wigan-athletic-v-stoke-city-01-september-2012-298805/"},{"d":"2012-10-16","h":"Faroe Islands","a":"Republic of Ireland","hs":1,"as":4,"c":"World Cup qualifier","i":true,"g":[[53,0]],"k":"Gunnar Nielsen","w":"Gunnar Nielsen (Faroese footballer)","al":["nielsen"],"u":"https://www.11v11.com/matches/faroe-islands-v-republic-of-ireland-16-october-2012-303478/"},{"d":"2012-11-19","h":"West Ham United","a":"Stoke City","hs":1,"as":1,"c":"Premier League","i":false,"g":[[13,0]],"k":"Jussi Jääskeläinen","w":"Jussi Jääskeläinen","al":["jaaskelainen"],"u":"https://www.11v11.com/matches/west-ham-united-v-stoke-city-19-november-2012-299569/"},{"d":"2012-11-28","h":"Stoke City","a":"Newcastle United","hs":2,"as":1,"c":"Premier League","i":false,"g":[[81,0]],"k":"Tim Krul","w":"Tim Krul","al":[],"u":"https://www.11v11.com/matches/stoke-city-v-newcastle-united-28-november-2012-299664/"},{"d":"2012-12-26","h":"Stoke City","a":"Liverpool","hs":3,"as":1,"c":"Premier League","i":false,"g":[[5,0],[49,0]],"k":"Pepe Reina","w":"Pepe Reina","al":["jose reina","reina"],"u":"https://www.11v11.com/matches/stoke-city-v-liverpool-26-december-2012-299971/"},{"d":"2013-03-10","h":"Newcastle United","a":"Stoke City","hs":2,"as":1,"c":"Premier League","i":false,"g":[[67,1]],"k":"Rob Elliot","w":"Rob Elliot","al":[],"u":"https://www.11v11.com/matches/newcastle-united-v-stoke-city-10-march-2013-300759/"},{"d":"2013-03-26","h":"Republic of Ireland","a":"Austria","hs":2,"as":2,"c":"World Cup qualifier","i":true,"g":[[25,1],[45,0]],"k":"Heinz Lindner","w":"Heinz Lindner","al":[],"u":"https://www.11v11.com/matches/republic-of-ireland-v-austria-26-march-2013-305172/"},{"d":"2013-04-20","h":"Queens Park Rangers","a":"Stoke City","hs":0,"as":2,"c":"Premier League","i":false,"g":[[77,1]],"k":"Rob Green","w":"Robert Green","al":["robert green","green"],"u":"https://www.11v11.com/matches/queens-park-rangers-v-stoke-city-20-april-2013-301215/"},{"d":"2013-05-06","h":"Sunderland","a":"Stoke City","hs":1,"as":1,"c":"Premier League","i":false,"g":[[9,0]],"k":"Simon Mignolet","w":"Simon Mignolet","al":[],"u":"https://www.11v11.com/matches/sunderland-v-stoke-city-06-may-2013-301368/"},{"d":"2013-11-10","h":"Swansea City","a":"Stoke City","hs":3,"as":3,"c":"Premier League","i":false,"g":[[8,0]],"k":"Gerhard Tremmel","w":"Gerhard Tremmel","al":[],"u":"https://www.11v11.com/matches/swansea-city-v-stoke-city-10-november-2013-305721/"},{"d":"2014-01-12","h":"Stoke City","a":"Liverpool","hs":3,"as":5,"c":"Premier League","i":false,"g":[[85,0]],"k":"Simon Mignolet","w":"Simon Mignolet","al":[],"u":"https://www.11v11.com/matches/stoke-city-v-liverpool-12-january-2014-306540/"},{"d":"2014-03-01","h":"Stoke City","a":"Arsenal","hs":1,"as":0,"c":"Premier League","i":false,"g":[[76,1]],"k":"Wojciech Szczęsny","w":"Wojciech Szczęsny","al":["szczesny"],"u":"https://www.11v11.com/matches/stoke-city-v-arsenal-01-march-2014-307242/"},{"d":"2014-03-08","h":"Norwich City","a":"Stoke City","hs":1,"as":1,"c":"Premier League","i":false,"g":[[73,1]],"k":"John Ruddy","w":"John Ruddy","al":[],"u":"https://www.11v11.com/matches/norwich-city-v-stoke-city-08-march-2014-307433/"},{"d":"2014-05-03","h":"Stoke City","a":"Fulham","hs":4,"as":1,"c":"Premier League","i":false,"g":[[82,0]],"k":"David Stockdale","w":"David Stockdale","al":[],"u":"https://www.11v11.com/matches/stoke-city-v-fulham-03-may-2014-308398/"},{"d":"2014-05-25","h":"Republic of Ireland","a":"Turkey","hs":1,"as":2,"c":"Friendly","i":true,"g":[[78,0]],"k":"Onur Kıvrak","w":"Onur Kıvrak","al":["kivrak","onur recep kivrak"],"u":"https://www.11v11.com/matches/republic-of-ireland-v-turkey-25-may-2014-308971/"},{"d":"2014-10-19","h":"Stoke City","a":"Swansea City","hs":2,"as":1,"c":"Premier League","i":false,"g":[[76,0]],"k":"Łukasz Fabiański","w":"Łukasz Fabiański","al":["fabianski","lukasz fabianski","Lukasz Fabiański"],"u":"https://www.11v11.com/matches/stoke-city-v-swansea-city-19-october-2014-310557/"},{"d":"2014-11-09","h":"Tottenham Hotspur","a":"Stoke City","hs":1,"as":2,"c":"Premier League","i":false,"g":[[33,0]],"k":"Hugo Lloris","w":"Hugo Lloris","al":[],"u":"https://www.11v11.com/matches/tottenham-hotspur-v-stoke-city-09-november-2014-310583/"},{"d":"2014-11-22","h":"Stoke City","a":"Burnley","hs":1,"as":2,"c":"Premier League","i":false,"g":[[32,0]],"k":"Tom Heaton","w":"Tom Heaton","al":[],"u":"https://www.11v11.com/matches/stoke-city-v-burnley-22-november-2014-310594/"},{"d":"2014-12-06","h":"Stoke City","a":"Arsenal","hs":3,"as":2,"c":"Premier League","i":false,"g":[[45,0]],"k":"Emiliano Martínez","w":"Emiliano Martínez","al":["martinez","emi martinez"],"u":"https://www.11v11.com/matches/stoke-city-v-arsenal-06-december-2014-310626/"},{"d":"2015-01-31","h":"Stoke City","a":"Queens Park Rangers","hs":3,"as":1,"c":"Premier League","i":false,"g":[[21,0],[34,0],[90,0]],"k":"Rob Green","w":"Robert Green","al":["robert green","green"],"u":"https://www.11v11.com/matches/stoke-city-v-queens-park-rangers-31-january-2015-310706/"},{"d":"2015-05-24","h":"Stoke City","a":"Liverpool","hs":6,"as":1,"c":"Premier League","i":false,"g":[[30,0]],"k":"Simon Mignolet","w":"Simon Mignolet","al":[],"u":"https://www.11v11.com/matches/stoke-city-v-liverpool-24-may-2015-310858/"},{"d":"2015-06-13","h":"Republic of Ireland","a":"Scotland","hs":1,"as":1,"c":"Euro 2016 qualifier","i":true,"g":[[38,0]],"k":"David Marshall","w":"David Marshall (Scottish footballer)","al":[],"u":"https://www.11v11.com/matches/republic-of-ireland-v-scotland-13-june-2015-314204/"},{"d":"2015-09-07","h":"Republic of Ireland","a":"Georgia","hs":1,"as":0,"c":"Euro 2016 qualifier","i":true,"g":[[68,0]],"k":"Nukri Revishvili","w":"Nukri Revishvili","al":[],"u":"https://www.11v11.com/matches/republic-of-ireland-v-georgia-07-september-2015-317533/"},{"d":"2015-09-19","h":"Stoke City","a":"Leicester City","hs":2,"as":2,"c":"Premier League","i":false,"g":[[20,0]],"k":"Kasper Schmeichel","w":"Kasper Schmeichel","al":["schmeichel"],"u":"https://www.11v11.com/matches/stoke-city-v-leicester-city-19-september-2015-316894/"},{"d":"2015-09-26","h":"Stoke City","a":"AFC Bournemouth","hs":2,"as":1,"c":"Premier League","i":false,"g":[[32,0]],"k":"Artur Boruc","w":"Artur Boruc","al":[],"u":"https://www.11v11.com/matches/stoke-city-v-afc-bournemouth-26-september-2015-316905/"},{"d":"2015-10-11","h":"Poland","a":"Republic of Ireland","hs":2,"as":1,"c":"Euro 2016 qualifier","i":true,"g":[[16,1]],"k":"Łukasz Fabiański","w":"Łukasz Fabiański","al":["fabianski","lukasz fabianski","Lukasz Fabiański"],"u":"https://www.11v11.com/matches/poland-v-republic-of-ireland-11-october-2015-317702/"},{"d":"2015-11-16","h":"Republic of Ireland","a":"Bosnia and Herzegovina","hs":2,"as":0,"c":"Euro 2016 play-off","i":true,"g":[[24,1],[70,0]],"k":"Asmir Begović","w":"Asmir Begović","al":["begovic"],"u":"https://www.11v11.com/matches/republic-of-ireland-v-bosnia-and-herzegovina-16-november-2015-318261/"},{"d":"2016-01-02","h":"West Bromwich Albion","a":"Stoke City","hs":2,"as":1,"c":"Premier League","i":false,"g":[[81,0]],"k":"Boaz Myhill","w":"Boaz Myhill","al":[],"u":"https://www.11v11.com/matches/west-bromwich-albion-v-stoke-city-02-january-2016-317038/"},{"d":"2016-01-13","h":"Stoke City","a":"Norwich City","hs":3,"as":1,"c":"Premier League","i":false,"g":[[49,0]],"k":"Declan Rudd","w":"Declan Rudd","al":[],"u":"https://www.11v11.com/matches/stoke-city-v-norwich-city-13-january-2016-317048/"},{"d":"2016-03-19","h":"Watford","a":"Stoke City","hs":1,"as":2,"c":"Premier League","i":false,"g":[[18,0]],"k":"Heurelho Gomes","w":"Heurelho Gomes","al":["gomes"],"u":"https://www.11v11.com/matches/watford-v-stoke-city-19-march-2016-317148/"},{"d":"2016-08-31","h":"Republic of Ireland","a":"Oman","hs":4,"as":0,"c":"Friendly","i":true,"g":[[34,0],[63,0]],"k":"Faiz Al-Rushaidi","w":"Faiz Al-Rushaidi","al":["faiyz al rusheidi","al rusheidi","al rushaidi","rushaidi","rusheidi","Faiyz Al Rusheidi"],"u":"https://www.11v11.com/matches/republic-of-ireland-v-oman-31-august-2016-320374/"},{"d":"2016-12-03","h":"Stoke City","a":"Burnley","hs":2,"as":0,"c":"Premier League","i":false,"g":[[20,0]],"k":"Paul Robinson","w":"Paul Robinson (footballer, born 1979)","al":[],"u":"https://www.11v11.com/matches/stoke-city-v-burnley-03-december-2016-351487/"},{"d":"2016-12-27","h":"Liverpool","a":"Stoke City","hs":4,"as":1,"c":"Premier League","i":false,"g":[[12,0]],"k":"Simon Mignolet","w":"Simon Mignolet","al":[],"u":"https://www.11v11.com/matches/liverpool-v-stoke-city-27-december-2016-351664/"},{"d":"2017-03-18","h":"Stoke City","a":"Chelsea","hs":1,"as":2,"c":"Premier League","i":false,"g":[[38,1]],"k":"Thibaut Courtois","w":"Thibaut Courtois","al":[],"u":"https://www.11v11.com/matches/stoke-city-v-chelsea-18-march-2017-352536/"},{"d":"2017-04-08","h":"Stoke City","a":"Liverpool","hs":1,"as":2,"c":"Premier League","i":false,"g":[[44,0]],"k":"Simon Mignolet","w":"Simon Mignolet","al":[],"u":"https://www.11v11.com/matches/stoke-city-v-liverpool-08-april-2017-352724/"},{"d":"2017-06-04","h":"Republic of Ireland","a":"Uruguay","hs":3,"as":1,"c":"Friendly","i":true,"g":[[27,0]],"k":"Esteban Conde","w":"Esteban Conde","al":[],"u":"https://www.11v11.com/matches/republic-of-ireland-v-uruguay-04-june-2017-353185/"},{"d":"2017-06-11","h":"Republic of Ireland","a":"Austria","hs":1,"as":1,"c":"World Cup qualifier","i":true,"g":[[85,0]],"k":"Heinz Lindner","w":"Heinz Lindner","al":[],"u":"https://www.11v11.com/matches/republic-of-ireland-v-austria-11-june-2017-353111/"}];
+const dayGameNo=dayNo-Math.floor(new Date("2026-11-24T12:00:00").getTime()/864e5)+1;  /* #1 is launch day */
+const DAY_ORDER=shuffle(DAYS,rng(4242));
+const dailyDay=DAY_ORDER[((dayGameNo-1)%DAY_ORDER.length+DAY_ORDER.length)%DAY_ORDER.length];
+const DAY_MAX=3;
+let dayPractice=null;
+const dayPts=st=>st.won?DAY_MAX+1-st.g.length:0;
+const dayKeys=m=>{const full=norm(m.k),parts=full.split(" ");return new Set([full,parts[parts.length-1],full.replace(/ /g,""),...m.al.map(norm)])};
+const dateLong=iso=>new Date(iso+"T12:00:00").toLocaleDateString("en-GB",{weekday:"long",day:"numeric",month:"long",year:"numeric"});
+const ord=n=>n+(n%100>=11&&n%100<=13?"th":({1:"st",2:"nd",3:"rd"}[n%10]||"th"));
+function renderDay(){
+  const practice=!!dayPractice;
+  const m=practice?dayPractice.m:dailyDay;
+  const key=m.d+m.h;
+  if(!practice&&dayRec().day&&dayRec().day.m!==key)delete dayRec().day;
+  const st=practice?dayPractice:(dayRec().day||(dayRec().day={m:key,g:[],won:false,over:false}));
+  const mine=m.i?"Republic of Ireland":"Stoke City",opp=m.h===mine?m.a:m.h;
+  const goals=m.g.map(([min,pen])=>`${ord(min)} minute${pen?" (penalty)":""}`);
+  const goalLine=goals.length===1?`scored in the ${goals[0]}`:`scored ${goals.length===2?"twice":goals.length===3?"a hat-trick":goals.length+" times"}: ${goals.slice(0,-1).join(", ")} and ${goals[goals.length-1]}`;
+  let foot="";
+  if(st.over){const pts=practice?0:dayPts(st);
+    foot=resultBox({share:practice?"":`🧤 A Day in the Life #${dayGameNo} ${st.won?st.g.length:"X"}/${DAY_MAX}\n${st.g.map((_,i)=>i===st.g.length-1&&st.won?"🟩":"🟥").join("")}\n${SITE}`,
+      tier:!st.won?1:st.g.length===1?4:st.g.length===2?3:2,lbl:st.won?"Got him":"Full time",score:st.won?`${st.g.length}/${DAY_MAX}`:"X",
+      verdict:`${st.won?"Correct. ":""}It was <a href="${wurl(m.w)}" target="_blank" rel="noopener">${esc(m.k)}</a> in goal for ${esc(opp)}. <a href="${m.u}" target="_blank" rel="noopener">Match report</a>`,
+      pts:pts?`+${pts} career points`:practice?"Practice round, no points":"",again:"Practice with another match",
+      extra:practice?"":`<p class="why" style="margin-top:10px">A new match appears tomorrow.</p>`})}
+  $("#day-game").innerHTML=`<div class="sec-head"><h2>A Day in the Life${practice?" practice":" #"+dayGameNo}</h2><span class="day">${practice?"Unscored practice round":dayLabel+" · new match at midnight"}</span></div>
+    <p class="note">One of JWalt's Premier League or Ireland goals. Name the goalkeeper he scored past. ${DAY_MAX} guesses, no clues.</p>
+    <div class="panel"><div class="fixture">
+      <div class="when">${esc(dateLong(m.d))} · ${esc(m.c)}</div>
+      <div class="teams"><span class="tm">${esc(m.h)}</span><span class="sc">${m.hs}–${m.as}</span><span class="tm away">${esc(m.a)}</span></div>
+      <div class="jw">Jon Walters <b>${esc(goalLine)}</b>.</div>
+      <div class="q2">Who was in goal for ${esc(opp)}?</div></div>
+    ${st.g.length?`<p class="missed">Not ${st.g.map(esc).join(", not ")}.</p>`:""}
+    ${st.over?"":`<div class="entry"><input id="dg" type="text" autocomplete="off" spellcheck="false" placeholder="Name the goalkeeper" aria-label="Name the goalkeeper"><button class="btn red" id="dgo">Guess</button><button class="btn ghost" id="dgive">Show me</button></div>
+      <div class="flash" id="dfl">${DAY_MAX-st.g.length} guess${DAY_MAX-st.g.length===1?"":"es"} left. Surnames are fine.</div>`}
+    ${foot}</div>`;
+  if(st.over){wireResult($("#day-game"),()=>{let n;do{n=DAYS[Math.floor(Math.random()*DAYS.length)]}while(n===m);dayPractice={m:n,g:[],won:false,over:false};renderDay()});if(!practice)renderCareer();return}
+  const keys=dayKeys(m);
+  const report=()=>{if(practice)return;if(!st.sentStart){st.sentStart=1;trackPlay("dayinlife","start")}if(st.over&&!st.sentEnd){st.sentEnd=1;trackPlay("dayinlife",st.won?"win":"loss")}};
+  const guess=()=>{const raw=$("#dg").value.trim(),v=norm(raw);
+    if(v.length<3){$("#dfl").textContent="Type at least three letters of his name.";return}
+    if(st.g.some(x=>norm(x)===v)){$("#dfl").textContent="You've already tried that one.";return}
+    st.g.push(raw);if(keys.has(v)||keys.has(v.replace(/ /g,""))){st.won=true;st.over=true}else if(st.g.length>=DAY_MAX)st.over=true;
+    report();if(!practice)save();renderDay();const i=$("#dg");if(i)i.focus()};
+  $("#dgo").addEventListener("click",guess);
+  $("#dg").addEventListener("keydown",e=>{if(e.key==="Enter"){e.preventDefault();guess()}});
+  $("#dgive").addEventListener("click",()=>{st.over=true;report();if(!practice)save();renderDay()});
+}
+
 /* ---------- The Missing Link ---------- */
 const M=TM.mystery;
 const dailyLink=dailyPick(M,104729,3);
@@ -741,15 +813,15 @@ function renderCareer(){
    <div class="pts"><b>${p}</b> career point${p===1?"":"s"}</div><div class="bar" aria-hidden="true"><i style="width:${pct}%"></i></div>
    <small>${next?`Next rank at ${next[0]} points: <b>${esc(next[1])}</b>.`:"Top of the club. Sporting director material."}${nextMs?` Next milestone unlocks at ${nextMs[0]}.`:""}</small>
    <small>Quizzes played ${pl.quiz} of ${QUIZZES.length} · Match days ${pl.days}</small>
-   <small>Team Sheet: your best score on each quiz counts once (shootout goals count double). JWaltle, Journeyman, The Missing Link and More or Fewer add points every day.</small>
+   <small>Team Sheet: your best score on each quiz counts once (shootout goals count double). JWaltle, Journeyman, A Day in the Life, The Missing Link and More or Fewer add points every day.</small>
    <button class="btn ghost" id="reset" style="color:#fff;border-color:#fff">Retire and start again</button><div id="resetc"></div>`;
   $("#reset").addEventListener("click",()=>{$("#resetc").innerHTML=`<small>This clears all your scores in this browser.</small> <button class="btn red" id="resetyes" style="margin-top:6px">Yes, retire</button>`;
-    $("#resetyes").addEventListener("click",()=>{store={quiz:{},daily:{}};save();renderCards();renderWaltle();renderPath();renderLink();renderHilo();renderCareer()})});
+    $("#resetyes").addEventListener("click",()=>{store={quiz:{},daily:{}};save();renderCards();renderWaltle();renderPath();renderDay();renderLink();renderHilo();renderCareer()})});
   $("#timeline").innerHTML=TIMELINE.map(t=>t[0]<=p?`<li class="ms on"><div class="when">${esc(t[1])}</div><h4>${esc(t[2])}</h4><p>${esc(t[3])}</p></li>`
     :`<li class="ms off"><div class="when">????</div><h4>Locked</h4><div class="lock">Unlocks at ${t[0]} points</div></li>`).join("");
 }
 
-renderCards();renderWaltle();renderPath();renderLink();renderHilo();renderCareer();
+renderCards();renderWaltle();renderPath();renderDay();renderLink();renderHilo();renderCareer();
 </script>
 <!-- Cloudflare Web Analytics --><script type='module' src='https://static.cloudflareinsights.com/beacon.min.js' data-cf-beacon='{"token": "8359055516154e148d26d4cea67d27b7"}'></script><!-- End Cloudflare Web Analytics -->
 </body>
